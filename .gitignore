@@ -1,0 +1,8 @@
+# ignore all logs
+*.log
+log.log
+archive.gz
+src/Data/secrets.json
+src/Data/config.json
+env
+.env
