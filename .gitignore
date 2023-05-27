@@ -6,3 +6,5 @@ src/Data/secrets.json
 src/Data/config.json
 env
 .env
+node_modules
+``` 
