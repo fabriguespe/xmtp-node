@@ -7,7 +7,7 @@ import {} from "dotenv/config";
 import { readFile } from "fs/promises";
 
 const categories = JSON.parse(
-  await readFile(new URL("./categories.json", import.meta.url))
+  await readFile(new URL("./categories.json", import.meta.url)),
 );
 
 (async () => {
@@ -31,32 +31,14 @@ const categories = JSON.parse(
 
   results = [...response.results];
 
-  while (response.has_more) {
-    response = await notion.databases.query({
-      database_id: databaseId,
-      start_cursor: response.next_cursor,
-      sorts: [
-        {
-          property: "Category",
-          direction: "ascending",
-        },
-        {
-          property: "Title",
-          direction: "ascending",
-        },
-      ],
-    });
-    results = [...results, ...response.results];
-  }
+  let csv = [];
   console.log("Results:", results.length);
 
   let md = "";
-  let cate = "";
   for (let cate in categories) {
     md += "## " + cate + "\n";
     md += categories[cate] + "\n<br />\n<br />";
     console.log(cate);
-
     for (let i in results) {
       let row = results[i];
       let category = row.properties.Category?.select?.name;
@@ -64,24 +46,49 @@ const categories = JSON.parse(
       let url = row.properties.URL?.url;
       let title = row.properties.Title?.title[0].plain_text;
       let curated = row.properties.Curated?.checkbox;
-      let partners = row.properties.Partners?.checkbox;
+      let partner = !!row.properties.Partners?.checkbox;
+      let icon = row.icon;
+      let cover = row.cover;
+      let featured = !!row.properties.Featured?.checkbox;
       let type = row.properties.Type?.select?.name;
-      let hackaton = row.properties.Hackaton?.select?.name;
+      let hackathon = row.properties.Hackathon?.select?.name;
       let description = row.properties.Description?.rich_text[0]?.plain_text;
       if (curated && type != "Partner") {
         md += "**[" + title + "](" + url + ")**" + "<br />";
         md += description + "<br />";
+
         md += "<br />\n";
-        //updateMeta(notion,row)
+
+        let obj = {
+          title: title,
+          url: url,
+          icon: icon,
+          cover: cover,
+          description: description,
+          partner: type == "Partner",
+          featured: featured,
+          type: type,
+          curated: curated,
+          hackathon: hackathon,
+          category: category,
+        };
+        console.log(obj);
+        csv.push(obj);
       }
-      //getTwitter()
+      console.log(csv);
     }
   }
+  fs.writeFile("apps.json", JSON.stringify(csv), (err) => {
+    if (err) throw err;
+    console.log("JSON file is created successfully.");
+  });
   fs.writeFile("APPS.md", md, (err) => {
     if (err) throw err;
     console.log("Markdown file is created successfully.");
   });
 })();
+
+// Rest of the code remains unchanged
 
 async function getTwitter(url) {
   let twitter = "";
